@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/exec"
+	"runtime"
 	"time"
 
 	"github.com/webercoder/go-dalle/client"
@@ -13,6 +15,26 @@ import (
 func usage(msg string) {
 	usage := fmt.Sprintf(`Usage: %s "prompt"`, os.Args[0])
 	log.Fatalf("%s\n%s\n", msg, usage)
+}
+
+func browser(url string) error {
+	var cmd string
+	var args []string
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = "cmd"
+		args = []string{"/c", "start", url}
+	case "darwin":
+		cmd = "open"
+		args = []string{url}
+	default: // "linux", "freebsd", "openbsd", "netbsd"
+		cmd = "xdg-open"
+		args = []string{url}
+	}
+
+	command := exec.Command(cmd, args...)
+	return command.Start()
 }
 
 func main() {
@@ -42,5 +64,8 @@ func main() {
 
 	for i, data := range resp.Data {
 		log.Printf("Result %d: %s (revised prompt: %s)", i+1, data.URL, data.RevisedPrompt)
+		if err := browser(data.URL); err != nil {
+			log.Printf("could not open browser to %v: %v", data.URL, err)
+		}
 	}
 }
